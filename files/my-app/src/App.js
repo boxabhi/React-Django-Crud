@@ -1,42 +1,33 @@
-import logo from './logo.svg';
-import './App.css';
-import React, { useState } from 'react';
-import { DatePicker } from 'antd';
-import { Avatar, List,Modal  } from 'antd';
-import { Button, Flex, Segmented,Card ,Row, Col,Tooltip } from 'antd';
-import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons';
-import RecipeFormModal from './components/RecipeFormModal';
 
-const data = [
-  {
-    title: 'Ant Design Title 1',
-  },
-  {
-    title: 'Ant Design Title 2',
-  },
-  {
-    title: 'Ant Design Title 3',
-  },
-  {
-    title: 'Ant Design Title 4',
-  },
-];
+import './App.css';
+import React, { useState ,useEffect} from 'react';
+import { Avatar, List, Card ,Row, Col,Tooltip, message } from 'antd';
+
+import RecipeFormModal from './components/RecipeFormModal';
+import axios from 'axios'; 
+
+
+
+
 
 function App() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [recipes, setRecipes] = useState([]);
   
-
-  const showModal = () => {
-    setIsModalOpen(true);
+  const fetchRecipes = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/receipes/');
+      console.log(response?.data?.data)
+      setRecipes(response?.data?.data); // Assuming the response data is the list of recipes
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      message.error('Failed to fetch recipes. Please try again.');
+    }
   };
 
-  const handleOk = () => {
-    setIsModalOpen(false);
-  };
+  useEffect(() => {
+    fetchRecipes();
+  }, []);
 
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
 
   return (
     <div style={{ backgroundColor: '#f0f0f0',paddingTop:150, paddingBottom:300}}>
@@ -44,7 +35,7 @@ function App() {
       
   <Col xs={24} sm={12} md={8} lg={6}>
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingBottom: '20px' }}>
-  <RecipeFormModal  open={isModalOpen} onOk={handleOk} onCancel={handleCancel}/>
+  <RecipeFormModal fetchData={fetchRecipes}  />
        
       </div>
  
@@ -53,21 +44,21 @@ function App() {
   
       <List
         itemLayout="horizontal"
-        dataSource={data}
+        dataSource={recipes}
         renderItem={(item, index) => (
           <List.Item>
             <List.Item.Meta
               avatar={
-                <Tooltip title={`Avatar Tooltip for ${item.title}`}>
-              <Avatar src={`https://www.whiskaffair.com/wp-content/uploads/2021/01/Chicken-Masala-2-3-1.jpg`} />
+                <Tooltip title={item.ingredients.map(ingredient => ingredient.ingredient_name).join(', ')}>
+              <Avatar src={`http://127.0.0.1:8000/${item.receipe_image}`} />
               </Tooltip>
               }
               title={
-                <Tooltip title={`Title Tooltip for ${item.title}`}>
-                  <a href="https://ant.design">{item.title}</a>
+                <Tooltip title={`Title Tooltip for ${item.receipe_name}`}>
+                  <a href="https://ant.design">{item.receipe_name}</a>
                 </Tooltip>
               }
-              description="Ant Design, a design language for background applications, is refined by Ant UED Team"
+              description={item.receipe_description}
             />
           </List.Item>
         )}

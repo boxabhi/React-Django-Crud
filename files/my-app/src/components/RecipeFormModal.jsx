@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form, Input, Select, Upload, Space } from 'antd';
+import { Modal, message, Button, Form, Input, Select, Upload, Space } from 'antd';
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons';
-
+import axios from 'axios'; 
 const { Option } = Select;
 
-const RecipeFormModal = () => {
+const RecipeFormModal = ({fetchData}) => {
+  
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [ingredients, setIngredients] = useState([{ key: '', value: '' }]);
+  const [form] = Form.useForm();
 
   const showModal = () => {
     setIsModalVisible(true);
@@ -27,6 +29,56 @@ const RecipeFormModal = () => {
     setIngredients(updatedIngredients);
   };
 
+
+  const handleSubmit = async (values) => {
+    console.log("Submitting form", values);
+    // Prepare the data to be sent to the API
+    const recipeData = {
+      receipe_name: values.recipe_name,
+      receipe_description: values.recipe_description,
+      receipe_type: values.recipe_type,
+      receipe_image: values.recipe_image && values.recipe_image[0]?.originFileObj, // Get the file object for upload
+      receipe_ingredents: ingredients.map((ingredient) => ingredient.value).filter(Boolean), // Filter out empty ingredients
+    };
+
+    console.log(recipeData)
+
+    const formData = new FormData();
+    // Append the fields to the FormData
+    for (const key in recipeData) {
+      if (Array.isArray(recipeData[key])) {
+        recipeData[key].forEach((item) => {
+          formData.append(key, item);
+        });
+      } else {
+        formData.append(key, recipeData[key]);
+      }
+    }
+
+    try {
+      // Replace `your-api-endpoint` with your actual API endpoint
+      const response = await axios.post('http://127.0.0.1:8000/api/receipes/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Set the content type
+        },
+      });
+
+      if(response?.data?.status === false){
+        message.error('Recipe not created!');
+        return
+      }
+      fetchData()
+      message.success('Recipe submitted successfully!'); // Show success message
+      setIsModalVisible(false); // Close the modal
+      form.resetFields(); // Reset form fields
+      setIngredients([{ value: '' }]); // Reset ingredients
+    } catch (error) {
+      console.error('Error submitting recipe:', error);
+      message.error('Failed to submit recipe. Please try again.'); // Show error message
+    }
+  };
+
+
   return (
     <>
       <Button type="primary" onClick={showModal}>
@@ -38,7 +90,7 @@ const RecipeFormModal = () => {
         onCancel={handleCancel}
         footer={null}
       >
-        <Form layout="vertical">
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
           {/* Recipe Name */}
           <Form.Item
             label="Recipe Name"
@@ -57,15 +109,15 @@ const RecipeFormModal = () => {
             <Input.TextArea placeholder="Enter recipe description" rows={4} />
           </Form.Item>
 
-          {/* Recipe Type (Veg/Non-Veg) */}
+         
           <Form.Item
             label="Recipe Type"
             name="recipe_type"
             rules={[{ required: true, message: 'Please select recipe type' }]}
           >
             <Select placeholder="Select recipe type">
-              <Option value="veg">Veg</Option>
-              <Option value="non-veg">Non-Veg</Option>
+              <Option value="Veg">Veg</Option>
+              <Option value="Non-Veg">Non-Veg</Option>
             </Select>
           </Form.Item>
 
